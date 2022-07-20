@@ -60,7 +60,7 @@ if batt_type != 'eFlex':
         if batt_type == 'eVault Max': #if eVault Max accept single csv upload
             uploaded_files = st.file_uploader("Choose a file", type= ["csv"], accept_multiple_files=False)
         else: #if eVault Classic accept single xls upload
-            uploaded_files = st.file_uploader("Choose a file", type = ["xls"], accept_multiple_files=False)
+            uploaded_files = st.file_uploader("Choose a file", type = ["xls","xlsx"], accept_multiple_files=False)
 else: #if eflex accept multiple csv files
     uploaded_files = st.file_uploader("Choose a file", type= ["csv"], accept_multiple_files=True)
 
