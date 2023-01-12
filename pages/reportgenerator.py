@@ -21,6 +21,34 @@ large_text_size = 20
 #global variable used to keep track of height where we draw text and images in the pdf
 currentHeight = PAGE_HEIGHT
 
+#Function checks at what index current is 0 for 15min for discharge test
+#Returns -1 if this never occurs
+#Returns index if event does occur
+def dischargeComplete(data):
+    firstZeroVal = 0
+    zeroCounter = 0
+
+    for i in range(0, len(data)):
+        if data[i] == 0:
+            firstZeroVal = i
+
+        if firstZeroVal != 0 :
+            zeroCounter = zeroCounter + 1
+            if zeroCounter == 15*60: #after 15 min return timestamp
+                return i
+
+    return -1
+
+#Function checks at what index discharge relay status is set to break
+#Returns -1 if this never occurs
+#Returns index if event does occur
+def dischargeBreak(data):
+    for i in range(0, len(data)):
+        if data[i] == 'Break':
+            return i
+    return -1
+
+
 #Function updates global variable currentHieght, outputs where to draw element. 
 #Inputs: gap indicates how much vertical space you want between last drawn element and next one
 def updateHeight(gap):
@@ -84,7 +112,7 @@ if zipFilePresent:
 
         #Fill out data in first table automatically if battery csv was uploaded
         if df_charging is not None:
-            data = [['Serial Number', df_charging['Battery ID'][0]],
+            data = [['Serial Number', df_charging['Battery ID'][0][1:-1]],
                 ['Incoming Software', df_charging['Software Version'][0]],
                 ['Outgoing Software', ''],
                 ['Support Ticket Reference:', ''],
@@ -157,6 +185,20 @@ if zipFilePresent:
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test End Date: ")
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test End Time: " + str(df_discharging['Time'][endingIndex]))
 
+        dischargeCompleteIndex = dischargeComplete(df_discharging['Unit Current'])
+        print(dischargeCompleteIndex)
+
+        if dischargeCompleteIndex >= 0 :
+            c.drawString(left_allign_pos,updateHeight(text_gap), "No Current for 15min Time: " + str(df_discharging['Time'][dischargeCompleteIndex]))
+        else:
+            c.drawString(left_allign_pos,updateHeight(text_gap), "No Current for 15min Time: NO VALUE")
+
+
+        dischargeBreakIndex = dischargeBreak(df_discharging['Discharge Relay Status'])
+        print(dischargeBreakIndex)
+        if dischargeBreakIndex >= 0 :
+            c.drawString(left_allign_pos,updateHeight(text_gap), "Discharge Break Time: " + str(df_discharging['Time'][dischargeBreakIndex]))
+
         c.setFont("Helvetica-Bold", large_text_size - 2)
         c.drawString(left_allign_pos, updateHeight(text_gap  * 2), "Discharge Test Graph")
 
@@ -178,7 +220,7 @@ if zipFilePresent:
         c.setFont("Helvetica", small_text_size)
         c.drawString(left_allign_pos,updateHeight(text_gap), "Voltage: " + str(df_charging['Unit Voltage'][0]))
         c.drawString(left_allign_pos,updateHeight(text_gap), "SOC: " + str(df_charging['Unit SOC'][0]))
-        c.drawString(left_allign_pos,updateHeight(text_gap), "Discharge Current: " + str(df_charging['Unit Current'][0]))
+        c.drawString(left_allign_pos,updateHeight(text_gap), "Charge Current: " + str(df_charging['Unit Current'][0]))
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test Start Date: ")
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test Start Time: " + str(df_charging['Time'][0]))
 
@@ -189,7 +231,7 @@ if zipFilePresent:
         c.setFont("Helvetica", small_text_size)
         c.drawString(left_allign_pos,updateHeight(text_gap), "Voltage: " + str(df_charging['Unit Voltage'][endingIndex]))
         c.drawString(left_allign_pos,updateHeight(text_gap), "SOC: " + str(df_charging['Unit SOC'][endingIndex]))
-        c.drawString(left_allign_pos,updateHeight(text_gap), "Discharge Current: " + str(df_charging['Unit Current'][endingIndex]))
+        c.drawString(left_allign_pos,updateHeight(text_gap), "Charge Current: " + str(df_charging['Unit Current'][endingIndex]))
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test End Date: ")
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test End Time: " + str(df_charging['Time'][endingIndex]))
 

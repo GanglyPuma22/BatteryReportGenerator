@@ -75,10 +75,11 @@ if uploaded_files:
         sorted_files = sorted(uploaded_files, key=lambda x: x.name) #sort the order of the uploaded files to go from the lowest number to the highest
         upload_file_df = (pd.read_csv(userFile) for userFile in sorted_files) #read in each uploaded file (in proper order) as a panda dataframe    
         concatenated_df = pd.concat(upload_file_df, ignore_index=True) #append each file into a single data frame and save it to a variable
-        concatenated_df['Battery ID'] = concatenated_df['Battery ID'].str[1:-1]
+        #concatenated_df['Battery ID'] = concatenated_df['Battery ID'].str[1:-1]
         concatenated_df.insert(concatenated_df.columns.get_loc('Temperature(?) #6') + 1, 'Temperature(?) #7', 0) #insert row of zeroes for temperature sensor 7 after column for temp 6
         concatenated_df.insert(concatenated_df.columns.get_loc('Temperature(?) #7') + 1, 'Temperature(?) #8', 0) #insert row of zeroes for temperature sensor 8 after column for temp 7
         serial_num = str(concatenated_df['Battery ID'][0])
+        concatenated_df['Unit Current'] = concatenated_df['Unit Current'].abs()
 
     elif batt_type == 'eVault Max':
         concatenated_df = pd.read_csv(uploaded_files)
@@ -91,8 +92,9 @@ if uploaded_files:
         column_mapping.update({'SumVolt':'Unit Voltage', 'Curr':'Unit Current', 'SOC':'Unit SOC', 'DischargeRelay':'Discharge Relay Status'})    
 
         concatenated_df.rename(column_mapping, axis = 1, inplace= True) #update column names of data frame
-        concatenated_df['Battery ID'] = serial_num #Add BatteryID and software version required column names
+        concatenated_df['Battery ID'] = " " + serial_num + " "#Add BatteryID and software version required column names
         concatenated_df['Software Version'] = software_version
+        concatenated_df['Unit Current'] = concatenated_df['Unit Current'].abs()
 
     else :
         #evault classic data uploaded as xls
@@ -112,6 +114,7 @@ if uploaded_files:
         concatenated_df['Software Version'] = software_version
         concatenated_df['Unit SOC'] = 0 #Add temporary unit SOC and discharge relay status as they are required field
         concatenated_df['Discharge Relay Status'] = "NA"
+        concatenated_df['Unit Current'] = concatenated_df['Unit Current'].abs()
 
     st.markdown("---")
     st.header('Options')
