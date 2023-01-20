@@ -173,7 +173,7 @@ if zipFilePresent:
 
         #Fill out data in first table automatically if battery csv was uploaded
         if df_charging is not None:
-            data = [['Serial Number', df_charging['Battery ID'][0][1:-1]],
+            data = [['Serial Number', df_charging['Battery ID'][0]],
                 ['Incoming Software', df_charging['Software Version'][0]],
                 ['Outgoing Software', ''],
                 ['Support Ticket Reference:', ''],
