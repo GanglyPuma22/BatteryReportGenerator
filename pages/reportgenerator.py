@@ -247,20 +247,6 @@ if zipFilePresent:
         c.drawString(left_allign_pos,updateHeight(text_gap), "Test End Time: " + str(df_discharging['Time'][endingIndex]))
 
         dischargeCompleteIndex = dischargeComplete(df_discharging['Unit Current'])
-        print(dischargeCompleteIndex)
-
-        if dischargeCompleteIndex >= 0 :
-            c.drawString(left_allign_pos,updateHeight(text_gap), "No Current for 15min Time: " + str(df_discharging['Time'][dischargeCompleteIndex]))
-        else:
-            c.drawString(left_allign_pos,updateHeight(text_gap), "No Current for 15min Time: NO VALUE")
-
-
-        dischargeBreakIndex = dischargeBreak(df_discharging['Discharge Relay Status'])
-        print(dischargeBreakIndex)
-        if dischargeBreakIndex >= 0 :
-            c.drawString(left_allign_pos,updateHeight(text_gap), "Discharge Break Time: " + str(df_discharging['Time'][dischargeBreakIndex]))
-
-        dischargeCompleteIndex = dischargeComplete(df_discharging['Unit Current'])
 
         if dischargeCompleteIndex >= 0 :
             c.drawString(left_allign_pos,updateHeight(text_gap), "No Current for 15min Time: " + str(df_discharging['Time'][dischargeCompleteIndex]))
