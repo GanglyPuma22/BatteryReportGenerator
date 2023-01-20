@@ -25,6 +25,7 @@ import io
 # Plotly and Steamlight Imports
 #--------------------------------------------------------------------------------------------------------------------------
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 import streamlit as st
 
@@ -38,7 +39,7 @@ figure = [] #Initialize data object to store figures as they are created
 
 #Load only the required data columes to reduce memory consumption
 req_cols = [
-            'Time','Unit Voltage', 'Unit Current', 'Battery ID', 'Unit SOC', 'Discharge Relay Status','Software Version',
+            'Time','Unit Voltage', 'Unit Current', 'Battery ID', 'Unit SOC', 'Discharge Relay Status', 'Charge Relay Status', 'Software Version',
             'Cell1', 'Cell2', 'Cell3', 'Cell4', 'Cell5', 'Cell6', 'Cell7', 'Cell8',
             'Cell9', 'Cell10', 'Cell11', 'Cell12', 'Cell13', 'Cell14', 'Cell15', 'Cell16',
             'Temperature(?) #1', 'Temperature(?) #2', 'Temperature(?) #3', 'Temperature(?) #4', 'Temperature(?) #5', 'Temperature(?) #6', 'Temperature(?) #7', 'Temperature(?) #8'
@@ -97,7 +98,7 @@ def createAnnotationGraph(figToUpdate, xPos, yPos, textInp) :
 def createChargeAndDischarge(df, data_type) :
     unitVIFig = make_subplots(specs=[[{"secondary_y": True}]]) 
     unitVIFig = createVIGraph(df, unitVIFig, data_type) #create graph from 
-    unitVIFig.update_layout(title_text="Battery Voltage and Current - Unit Ser#: " + str(df['Battery ID'][0]) + "<br><sup>Firmware V"+str(df['Software Version'][0])+" - " + data_type)
+    unitVIFig.update_layout(title_text="Battery Voltage and Current - Unit Ser#: " + str(df['Battery ID'][0]) + "<br><sup>Firmware V"+str(df['Software Version'][0])+" - " + data_type, hovermode="x unified")
         
     st.plotly_chart(unitVIFig) #plot charge data
     figure.append(unitVIFig)
@@ -117,30 +118,37 @@ def createVIGraph(dataFrame, unitVIFig, data_type):
    
     #Leave value at mV precision
     unitVoltageData['Unit Voltage'] = [int(x) / 1000.0 for x in unitVoltageData['Unit Voltage']]
-    unitCurrentData = dataFrame['Unit Current']
+    unitCurrentData = dataFrame['Unit Current'].abs()
 
     #Batt Voltage Min/Max
     Vmax = max(unitVoltageData['Unit Voltage'])
     Vmin = min(unitVoltageData['Unit Voltage'])
 
     #Batt Amps Min/Max
-    Imax = np.amax(abs(unitCurrentData))
-    ImaxX = np.argmax(abs(unitCurrentData))
-    Iavg = round(np.mean(abs(unitCurrentData)))
+    # Imax = np.amax(abs(unitCurrentData))
+    # ImaxX = np.argmax(abs(unitCurrentData))
+    # Iavg = round(np.mean(abs(unitCurrentData)))
     
     #calculate kWh throughput into or out of the battery
-    kwhSum = 0
-    kwhFormat = 0
-    for index, row in dataFrame.iterrows():
-        kwhInst = row['Unit Voltage'] * row['Unit Current'] * (1 / 3600)
-        # print(kwhInst)
-        kwhSum = kwhInst + kwhSum
+    # kwhSum = 0
+    # kwhFormat = 0
+    # for index, row in dataFrame.iterrows():
+    #     kwhInst = row['Unit Voltage'] * row['Unit Current'] * (1 / 3600)
+    #     # print(kwhInst)
+    #     kwhSum = kwhInst + kwhSum
 
-    kwhFormat = round(kwhSum/1000, 3)
+    # kwhFormat = round(kwhSum/1000, 3)
+    hovertemplate ='<i>SOC</i>: $%{y:.2f}'+ '<br><b>X</b>: %{x}<br>'
+
+    #text = ['SOC: {}'.format(dataFrame['Unit SOC']) for i in range(len(dataFrame.columns))]
 
     # Add traces
-    unitVIFig.add_trace(go.Scatter(x=dataFrame['Time'], y=unitVoltageData['Unit Voltage'], name="Volts"), secondary_y=False)
-    unitVIFig.add_trace(go.Scatter(x=dataFrame['Time'], y=unitCurrentData, name="Amps"), secondary_y=True)
+    unitVIFig.add_trace(go.Scatter(x=dataFrame['Time'], y=unitVoltageData['Unit Voltage'], name="Volts",  hovertemplate =' %{y}<br>'), secondary_y=False)
+    unitVIFig.add_trace(go.Scatter(x=dataFrame['Time'], y=unitCurrentData, name="Amps", hovertemplate =
+    '%{y}' + 
+    '<br> SOC: %{text} <br>' + 
+    '<b> Timestamp</b>: %{x}',
+    text = dataFrame['Unit SOC']), secondary_y=True)
     #Set y-axes titles and auto range
     unitVIFig.update_yaxes(title_text="<b>Voltage</b>", secondary_y=False, range=(Vmin, Vmax+0.25)) #set the voltage graph range to the min/max plus a little extra
     unitVIFig.update_yaxes(title_text="<b>Amps</b>", secondary_y=True)
@@ -149,33 +157,34 @@ def createVIGraph(dataFrame, unitVIFig, data_type):
     
     
     #show Max Amps with arrow
-    createBoxAnnotation(unitVIFig, ImaxX, Vmax, "<b>Max Amps: </b>" + str(Imax)+ "<br><b>Avg Amps:</b>" + str(Iavg))
+    #createBoxAnnotation(unitVIFig, ImaxX, Vmax, "<b>Max Amps: </b>" + str(Imax)+ "<br><b>Avg Amps:</b>" + str(Iavg))
 
-    if data_type == "Charge":
-        createAnnotationGraph(unitVIFig, np.argmax(unitVoltageData['Unit Voltage']), np.max(unitVoltageData['Unit Voltage']), "<b>SOC:</b>" + str(dataFrame.iloc[np.argmax(unitVoltageData['Unit Voltage'])]['Unit SOC']) + "\n" + "<b>Vstop:</b>" + str(np.max(unitVoltageData['Unit Voltage'])))
-    elif data_type == "Discharge":
-        createAnnotationGraph(unitVIFig, np.argmin(unitVoltageData['Unit Voltage']), np.min(unitVoltageData['Unit Voltage']), "<b>SOC:</b>" + str(dataFrame.iloc[np.argmin(unitVoltageData['Unit Voltage'])]['Unit SOC']) + "\n" + "<b>Vstop:</b>" + str(np.min(unitVoltageData['Unit Voltage'])))
+    # if data_type == "Charge":
+    #     createAnnotationGraph(unitVIFig, np.argmax(unitVoltageData['Unit Voltage']), np.max(unitVoltageData['Unit Voltage']), "<b>SOC:</b>" + str(dataFrame.iloc[np.argmax(unitVoltageData['Unit Voltage'])]['Unit SOC']) + "\n" + "<b>Vstop:</b>" + str(np.max(unitVoltageData['Unit Voltage'])))
+    # elif data_type == "Discharge":
+    #     createAnnotationGraph(unitVIFig, np.argmin(unitVoltageData['Unit Voltage']), np.min(unitVoltageData['Unit Voltage']), "<b>SOC:</b>" + str(dataFrame.iloc[np.argmin(unitVoltageData['Unit Voltage'])]['Unit SOC']) + "\n" + "<b>Vstop:</b>" + str(np.min(unitVoltageData['Unit Voltage'])))
+    
     #add annotation with kWh throughput for data
-    unitVIFig.add_annotation(
-        xref="paper",
-        yref="paper",
-        xanchor="auto",
-        yanchor= "auto",
-        yshift=-50,
-        text="<b>kWh Total:</b>" + str(kwhFormat),
-        font=dict(
-            family="Verdana, sans-serif",
-            size=12,
-            color="#000"
-        ),
-        showarrow=False,
-        align="center",
-        bordercolor="#c7c7c7",
-        borderwidth=2,
-        borderpad=4,
-        bgcolor="#fff",
-        opacity=1
-    )
+    # unitVIFig.add_annotation(
+    #     xref="paper",
+    #     yref="paper",
+    #     xanchor="auto",
+    #     yanchor= "auto",
+    #     yshift=-50,
+    #     text="<b>kWh Total:</b>" + str(kwhFormat),
+    #     font=dict(
+    #         family="Verdana, sans-serif",
+    #         size=12,
+    #         color="#000"
+    #     ),
+    #     showarrow=False,
+    #     align="center",
+    #     bordercolor="#c7c7c7",
+    #     borderwidth=2,
+    #     borderpad=4,
+    #     bgcolor="#fff",
+    #     opacity=1
+    # )
     return unitVIFig
 
 # Sidebar & App Config
@@ -272,7 +281,7 @@ else: #df is not empty one file was uploaded, plot like before
         dsgRelayOpenLoc = (df['Discharge Relay Status'] == "Break").idxmax()
         # drop all rows starting from 0A to the end of the list
         df = df.drop(df.index[range(dsgRelayOpenLoc, df.shape[0])])
-        unitVIFig.update_layout(title_text="Battery Voltage and Current - Unit Ser#: " + str(df['Battery ID'][0]) + "<br><sup>Firmware V"+str(df['Software Version'][0])+" - Discharging</sup>")
+        unitVIFig.update_layout(title_text="Battery Voltage and Current - Unit Ser#: " + str(df['Battery ID'][0]) + "<br><sup>Firmware V"+str(df['Software Version'][0])+" - Discharging</sup>", hovermode="x unified") 
         #Annotation for SOC and Voltage at minimum volatage value of discharge
         #createAnnotationGraph(unitVIFig, np.argmin(df['Unit Voltage']), np.min(df['Unit Voltage']), "<b>SOC:</b>" + str(df.iloc[np.argmin(df['Unit Voltage'])]['Unit SOC']) + "\n" + "<b>Vstop:</b>" + str(np.min(df['Unit Voltage'])))
         figure.append(unitVIFig)
@@ -289,7 +298,7 @@ else: #df is not empty one file was uploaded, plot like before
         #drop all rows starting from 0A to the end of the list
         df = df.drop(df.index[range(currentZeroLoc, df.shape[0])])
         # Add figure title
-        unitVIFig.update_layout(title_text="Battery Voltage and Current - Unit Ser#: " + str(df['Battery ID'][0]) + "<br><sup>Firmware V"+str(df['Software Version'][0])+" - Charging</sup>")
+        unitVIFig.update_layout(title_text="Battery Voltage and Current - Unit Ser#: " + str(df['Battery ID'][0]) + "<br><sup>Firmware V"+str(df['Software Version'][0])+" - Charging</sup>", hovermode="x unified")
         # Add figure annotation at max voltage of charging cycle
         #createAnnotationGraph(unitVIFig, np.argmax(df['Unit Voltage']), np.max(df['Unit Voltage']), "<b>SOC:</b>" + str(df.iloc[np.argmax(df['Unit Voltage'])]['Unit SOC']) + "\n" + "<b>Vstop:</b>" + str(np.max(df['Unit Voltage'])))
         figure.append(unitVIFig)
