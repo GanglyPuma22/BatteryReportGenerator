@@ -26,6 +26,7 @@ import io
 #--------------------------------------------------------------------------------------------------------------------------
 import plotly.graph_objects as go
 import plotly.express as px
+import plotly.express as px
 from plotly.subplots import make_subplots
 import streamlit as st
 
@@ -39,6 +40,7 @@ figure = [] #Initialize data object to store figures as they are created
 
 #Load only the required data columes to reduce memory consumption
 req_cols = [
+            'Time','Unit Voltage', 'Unit Current', 'Battery ID', 'Unit SOC', 'Discharge Relay Status', 'Charge Relay Status', 'Software Version',
             'Time','Unit Voltage', 'Unit Current', 'Battery ID', 'Unit SOC', 'Discharge Relay Status', 'Charge Relay Status', 'Software Version',
             'Cell1', 'Cell2', 'Cell3', 'Cell4', 'Cell5', 'Cell6', 'Cell7', 'Cell8',
             'Cell9', 'Cell10', 'Cell11', 'Cell12', 'Cell13', 'Cell14', 'Cell15', 'Cell16',
